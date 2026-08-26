@@ -1,946 +1,134 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تحضير الدروس بالذكاء الاصطناعي</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
-  :root{
-    --primary:#0f6e5c; 
-    --primary-dark:#0a5346;
-    --accent:#c8963e;
-    --bg:#f5f7f6;
-    --card:#ffffff;
-    --border:#dfe6e3;
-    --text:#22302c;
-    --muted:#6b7a75;
-    --danger:#b3413b;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:"Segoe UI","Tahoma",Arial,sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    padding-bottom:60px;
-  }
-  header.app-header{
-    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
-    color:#fff;
-    padding:22px 18px 26px;
-    text-align:center;
-    border-radius:0 0 22px 22px;
-    box-shadow:0 4px 14px rgba(0,0,0,.12);
-  }
-  header.app-header h1{margin:0;font-size:20px;font-weight:700;}
-  header.app-header p{margin:6px 0 0;font-size:13px;opacity:.9;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحضير الدروس بالذكاء الاصطناعي - IPA</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; margin: 0; padding: 0; }
+        
+        /* شاشة تسجيل الدخول */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); display: flex;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+        .login-box {
+            background: white; padding: 40px; border-radius: 12px;
+            width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .login-box h2 { color: #1e293b; margin-bottom: 8px; }
+        .login-box p { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+        .login-box input {
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font-size: 15px; margin-bottom: 12px; outline: none;
+        }
+        .login-box button {
+            width: 100%; padding: 12px; background: #2563eb; color: white;
+            border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        .login-box button:hover { background: #1d4ed8; }
+        .error-msg { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
 
-  .steps-bar{
-    display:flex;justify-content:center;gap:6px;margin:16px auto 0;max-width:520px;padding:0 16px;
-  }
-  .steps-bar .dot{
-    flex:1;height:5px;border-radius:4px;background:#e3e8e6;transition:.3s;
-  }
-  .steps-bar .dot.active{background:var(--accent);}
-  .steps-bar .dot.done{background:var(--primary);}
-
-  .container{max-width:640px;margin:0 auto;padding:16px;}
-  .card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:18px;
-    margin-bottom:16px;
-    box-shadow:0 2px 8px rgba(0,0,0,.03);
-  }
-  .card h2{font-size:16px;margin:0 0 4px;color:var(--primary-dark);}
-  .card .hint{font-size:12.5px;color:var(--muted);margin:0 0 14px;}
-
-  label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px;color:var(--text);}
-  input[type=text],input[type=number],textarea,select{
-    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;
-    font-size:14px;font-family:inherit;background:#fbfdfc;color:var(--text);
-  }
-  textarea{resize:vertical;min-height:80px;}
-  .row2{display:flex;gap:10px;}
-  .row2 > div{flex:1;}
-
-  button{
-    font-family:inherit;cursor:pointer;border:none;border-radius:12px;
-    font-size:14.5px;font-weight:700;padding:13px 18px;transition:.15s;
-  }
-  .btn-primary{background:var(--primary);color:#fff;width:100%;}
-  .btn-primary:hover{background:var(--primary-dark);}
-  .btn-primary:disabled{background:#a9c2bc;cursor:not-allowed;}
-  .btn-secondary{background:#fff;color:var(--primary);border:1.5px solid var(--primary);width:100%;}
-  .btn-ghost{background:transparent;color:var(--muted);width:auto;padding:8px 10px;font-weight:600;font-size:13px;}
-  .btn-row{display:flex;gap:10px;margin-top:16px;}
-  .btn-row button{flex:1;}
-
-  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-  .action-btn{
-    background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px 10px;
-    text-align:center;color:var(--text);font-size:13.5px;font-weight:700;
-  }
-  .action-btn .emoji{font-size:22px;display:block;margin-bottom:6px;}
-  .action-btn:active{transform:scale(.97);}
-  .action-btn.busy{opacity:.6;}
-
-  .loading{
-    display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 10px;color:var(--muted);
-  }
-  .spinner{
-    width:34px;height:34px;border-radius:50%;
-    border:4px solid #e3e8e6;border-top-color:var(--primary);
-    animation:spin 0.8s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg);}}
-
-  table.plan-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;}
-  table.plan-table th, table.plan-table td{
-    border:1px solid #cfd8d4;padding:6px 5px;text-align:center;vertical-align:top;line-height:1.5;
-  }
-  table.plan-table th{background:#eaf3ef;color:var(--primary-dark);font-weight:700;}
-  table.plan-table td{background:#fff;}
-  .domain-cell{background:#f5efe1 !important;font-weight:700;color:#8a6a20;}
-  .meta-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12.5px;}
-  .meta-table td{border:1px solid #cfd8d4;padding:7px 8px;}
-  .meta-table td.label{background:#eaf3ef;font-weight:700;width:110px;color:var(--primary-dark);}
-  .section-title{font-weight:700;color:var(--primary-dark);font-size:14px;margin:18px 0 8px;border-right:4px solid var(--accent);padding-right:8px;}
-
-  .qcard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:13.5px;}
-  .qcard b{color:var(--primary-dark);}
-  .qcard .opt{margin:4px 0 0 4px;color:var(--text);}
-  .qcard .correct{color:var(--primary);font-weight:700;}
-
-  .badge{display:inline-block;background:#eaf3ef;color:var(--primary-dark);font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;margin-bottom:8px;}
-  .error-box{background:#fbeceb;color:var(--danger);border:1px solid #f0c9c6;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:10px;}
-  .toast{
-    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-    background:#1f2b26;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;
-    box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:50;opacity:0;transition:.3s;pointer-events:none;
-  }
-  .toast.show{opacity:1;}
-  .top-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-  .small-muted{font-size:12px;color:var(--muted);}
-
-  .upload-box{
-    border:2px dashed var(--border);border-radius:14px;padding:18px 12px;text-align:center;
-    background:#fbfdfc;cursor:pointer;transition:.15s;
-  }
-  .upload-box:hover{border-color:var(--primary);}
-  .upload-box .emoji{font-size:28px;display:block;margin-bottom:6px;}
-  .upload-box input[type=file]{display:none;}
-  .file-chip{
-    display:flex;align-items:center;justify-content:space-between;
-    background:#eaf3ef;border-radius:10px;padding:9px 12px;margin-top:10px;font-size:13px;color:var(--primary-dark);
-  }
-  .file-chip .rm{color:var(--danger);cursor:pointer;font-weight:700;}
-  .divider-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:12px;}
-  .divider-or::before,.divider-or::after{content:"";flex:1;height:1px;background:var(--border);}
-
-  .gear-btn{
-    position:absolute;left:14px;top:16px;background:rgba(255,255,255,.18);border:none;
-    color:#fff;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;
-  }
-  .key-badge{
-    position:absolute;left:56px;top:22px;font-size:10.5px;background:rgba(255,255,255,.18);
-    padding:3px 9px;border-radius:20px;color:#fff;
-  }
-  .modal-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;
-    display:flex;align-items:flex-end;justify-content:center;
-  }
-  .modal-box{
-    background:#fff;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:520px;
-    max-height:85vh;overflow-y:auto;
-  }
-  .modal-box h3{margin:0 0 8px;color:var(--primary-dark);font-size:16px;}
-  .modal-box a{color:var(--primary);}
-  .modal-close{float:left;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;}
-</style>
+        /* المحتوى الرئيسي */
+        #main-content { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; text-align: right; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #334155; }
+        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .btn-generate { background: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .btn-generate:hover { background: #059669; }
+        #output { margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; white-space: pre-wrap; line-height: 1.6; }
+    </style>
 </head>
 <body>
 
-<header class="app-header" style="position:relative">
-  <button class="gear-btn" onclick="openSettings()">⚙️</button>
-  <span class="key-badge" id="keyBadge"></span>
-  <h1>📘 تحضير الدروس بالذكاء الاصطناعي</h1>
-  <p>خطة درس احترافية + أسئلة + عرض تقديمي + تلخيص — بضغطة زر</p>
-</header>
-
-<div class="steps-bar" id="stepsBar"></div>
-
-<div class="container" id="app"></div>
-
-<div id="modalRoot"></div>
-<div class="toast" id="toast"></div>
-
-<script>
-const state = {
-  step: 1,
-  lesson: {
-    grade:"", section:"", subject:"", unit:"", title:"",
-    dateFrom:"", dateTo:"", periods:"1",
-    warmup:"", priorLearning:""
-  },
-  book: { pages:"", content:"", fileName:"" },
-  plan: null,
-  questions: null,
-  presentation: null,
-  summary: null,
-  busyAction: null,
-  pdfExtracting: false,
-  pdfError: ""
-};
-
-if(window.pdfjsLib){
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-}
-
-const el = id => document.getElementById(id);
-
-function toast(msg){
-  const t = el('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2600);
-}
-
-function renderStepsBar(){
-  const total = 4;
-  let html = '';
-  for(let i=1;i<=total;i++){
-    let cls = 'dot';
-    if(i < state.step) cls += ' done';
-    if(i === state.step) cls += ' active';
-    html += `<div class="${cls}"></div>`;
-  }
-  el('stepsBar').innerHTML = html;
-}
-
-function goStep(n){
-  state.step = n;
-  render();
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-// ---------- API KEY MANAGEMENT ----------
-function getApiKey(){
-  try{ return localStorage.getItem('claude_api_key') || ""; }catch(e){ return ""; }
-}
-function setApiKey(key){
-  try{ localStorage.setItem('claude_api_key', key); }catch(e){}
-}
-
-// ---------- API CALL ----------
-async function callClaude(prompt, systemPrompt){
-  const key = getApiKey();
-  if(!key){
-    throw new Error("لم يتم إدخال مفتاح API. يرجى إضافته من الإعدادات ⚙️ أعلى الصفحة");
-  }
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4000,
-      system: systemPrompt || "",
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
-  if(!res.ok){
-    let msg = "فشل الاتصال بالذكاء الاصطناعي (تحقق من صحة المفتاح والرصيد)";
-    try{
-      const errData = await res.json();
-      if(errData && errData.error && errData.error.message) msg = errData.error.message;
-    }catch(e){}
-    throw new Error(msg);
-  }
-  const data = await res.json();
-  const text = data.content.map(b => b.text || "").join("\n");
-  return text;
-}
-
-function extractJSON(text){
-  let t = text.trim();
-  t = t.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
-  const start = t.indexOf('{');
-  const end = t.lastIndexOf('}');
-  if(start === -1 || end === -1) throw new Error("تعذر تحليل الاستجابة");
-  return JSON.parse(t.slice(start, end+1));
-}
-
-// ---------- STEP 1: Lesson info ----------
-function renderStep1(){
-  const l = state.lesson;
-  return `
-  <div class="card">
-    <h2>1️⃣ معلومات الدرس</h2>
-    <p class="hint">أدخل بيانات الدرس الأساسية. الحقول المميزة بـ * مطلوبة.</p>
-
-    <div class="row2">
-      <div>
-        <label>الصف *</label>
-        <input type="text" id="f_grade" placeholder="مثال: الثامن" value="${l.grade}">
-      </div>
-      <div>
-        <label>الشعبة</label>
-        <input type="text" id="f_section" placeholder="مثال: أ، ب، ج" value="${l.section}">
-      </div>
+    <!-- شاشة التحقق من البريد الإلكتروني -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>تسجيل الدخول</h2>
+            <p>مخصص لأعضاء IPA فقط</p>
+            <input type="email" id="user-email" placeholder="example@ipa.edu.jo" required>
+            <button onclick="validateLogin()">دخول</button>
+            <div id="login-error" class="error-msg">عذراً، الدخول متاح فقط للإيميلات التي تتبع المجموع الكلي @ipa.edu.jo</div>
+        </div>
     </div>
 
-    <label>المبحث *</label>
-    <input type="text" id="f_subject" placeholder="مثال: الثقافة المالية" value="${l.subject}">
+    <!-- المحتوى الرئيسي للبرنامج -->
+    <div id="main-content">
+        <div class="container">
+            <h2>نظام تحضير الدروس التلقائي (IPA)</h2>
+            <hr><br>
+            <div class="form-group">
+                <label>المادة والصف:</label>
+                <input type="text" id="subject" placeholder="مثال: الرياضيات - الصف السادس">
+            </div>
+            <div class="form-group">
+                <label>عنوان الدرس:</label>
+                <input type="text" id="topic" placeholder="مثال: الاستهلاك الرشيد">
+            </div>
+            <div class="form-group">
+                <label>ملاحظات أو أهداف خاصة (اختياري):</label>
+                <textarea id="notes" rows="3" placeholder="أضف أي تفاصيل تود تضمينها في التحضير..."></textarea>
+            </div>
+            <button class="btn-generate" onclick="generateLesson()">توليد التحضير الآن</button>
 
-    <div class="row2">
-      <div>
-        <label>عنوان الوحدة</label>
-        <input type="text" id="f_unit" placeholder="مثال: البنوك" value="${l.unit}">
-      </div>
-      <div>
-        <label>عدد الحصص</label>
-        <input type="number" id="f_periods" min="1" value="${l.periods}">
-      </div>
+            <div id="output">سيظهر تحضير الدرس هنا بعد الضغط على زر التوليد...</div>
+        </div>
     </div>
 
-    <label>عنوان الدرس *</label>
-    <input type="text" id="f_title" placeholder="مثال: خيارات حفظ الأموال" value="${l.title}">
-
-    <div class="row2">
-      <div>
-        <label>التاريخ من</label>
-        <input type="text" id="f_dateFrom" placeholder="يوم/شهر/سنة" value="${l.dateFrom}">
-      </div>
-      <div>
-        <label>التاريخ إلى</label>
-        <input type="text" id="f_dateTo" placeholder="يوم/شهر/سنة" value="${l.dateTo}">
-      </div>
-    </div>
-
-    <label>التهيئة الحافزة (اختياري — إن تركته سيقترحه الذكاء الاصطناعي)</label>
-    <textarea id="f_warmup" placeholder="مثال: أين يخبئ الناس أموالهم عادةً؟">${l.warmup}</textarea>
-
-    <label>مراجعة التعلم السابق (اختياري)</label>
-    <textarea id="f_prior" placeholder="مثال: قرارات الادخار">${l.priorLearning}</textarea>
-
-    <div class="btn-row">
-      <button class="btn-primary" onclick="saveStep1AndNext()">التالي ←</button>
-    </div>
-  </div>`;
-}
-
-function saveStep1AndNext(){
-  const l = state.lesson;
-  l.grade = el('f_grade').value.trim();
-  l.section = el('f_section').value.trim();
-  l.subject = el('f_subject').value.trim();
-  l.unit = el('f_unit').value.trim();
-  l.title = el('f_title').value.trim();
-  l.dateFrom = el('f_dateFrom').value.trim();
-  l.dateTo = el('f_dateTo').value.trim();
-  l.periods = el('f_periods').value.trim() || "1";
-  l.warmup = el('f_warmup').value.trim();
-  l.priorLearning = el('f_prior').value.trim();
-
-  if(!l.grade || !l.subject || !l.title){
-    toast("يرجى تعبئة الصف والمبحث وعنوان الدرس على الأقل");
-    return;
-  }
-  goStep(2);
-}
-
-// ---------- STEP 2: Book content ----------
-function renderStep2(){
-  const b = state.book;
-  return `
-  <div class="card">
-    <h2>2️⃣ محتوى الكتاب</h2>
-    <p class="hint">ارفع ملف الكتاب PDF وحدّد نطاق الصفحات لاستخراج المحتوى تلقائيًا، أو الصق النص يدويًا.</p>
-
-    <label>نطاق الصفحات المطلوبة</label>
-    <input type="text" id="f_pages" placeholder="مثال: 45-51 أو 45,46,50" value="${b.pages}" oninput="state.book.pages=this.value">
-
-    <label style="margin-top:16px">رفع ملف الكتاب (PDF)</label>
-    <label class="upload-box" for="pdfInput">
-      <span class="emoji">📄</span>
-      <span>${b.fileName ? 'اضغط لاستبدال الملف' : 'اضغط لاختيار ملف PDF من جهازك'}</span>
-      <input type="file" id="pdfInput" accept="application/pdf" onchange="handlePdfUpload(event)">
-    </label>
-    ${b.fileName ? `<div class="file-chip"><span>📎 ${b.fileName}</span><span class="rm" onclick="clearPdf()">إزالة ✕</span></div>` : ''}
-
-    <div id="pdfStatus"></div>
-
-    <button class="btn-secondary" style="margin-top:12px" onclick="extractPdfPages()" ${!b.fileName ? 'disabled' : ''}>
-      🔍 استخراج المحتوى من الصفحات المحددة
-    </button>
-
-    <div class="divider-or">أو الصق النص يدويًا</div>
-
-    <label>نص محتوى الكتاب</label>
-    <textarea id="f_content" style="min-height:150px" placeholder="الصق نص الصفحات هنا..." oninput="state.book.content=this.value">${b.content}</textarea>
-
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="goStep(1)">→ رجوع</button>
-      <button class="btn-primary" onclick="saveStep2AndNext()">التالي ←</button>
-    </div>
-  </div>`;
-}
-
-let pdfFileData = null; // ArrayBuffer of the uploaded PDF
-
-function handlePdfUpload(evt){
-  const file = evt.target.files[0];
-  if(!file) return;
-  if(file.type !== 'application/pdf'){
-    toast('يرجى اختيار ملف PDF صالح');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(e){
-    pdfFileData = e.target.result;
-    state.book.fileName = file.name;
-    el('pdfStatus').innerHTML = `<div class="small-muted" style="margin-top:8px">✅ تم تحميل الملف. حدد نطاق الصفحات ثم اضغط "استخراج المحتوى".</div>`;
-    render();
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function clearPdf(){
-  pdfFileData = null;
-  state.book.fileName = "";
-  render();
-}
-
-function parsePageRange(rangeStr, maxPages){
-  const pages = new Set();
-  if(!rangeStr) return null;
-  rangeStr.split(',').forEach(part=>{
-    part = part.trim();
-    if(!part) return;
-    if(part.includes('-')){
-      let [a,b] = part.split('-').map(x=>parseInt(x.trim(),10));
-      if(!isNaN(a) && !isNaN(b)){
-        for(let i=Math.min(a,b); i<=Math.max(a,b); i++) pages.add(i);
-      }
-    } else {
-      let n = parseInt(part,10);
-      if(!isNaN(n)) pages.add(n);
-    }
-  });
-  return [...pages].filter(p=>p>=1 && (!maxPages || p<=maxPages)).sort((a,b)=>a-b);
-}
-
-async function extractPdfPages(){
-  if(!pdfFileData){
-    toast('يرجى رفع ملف PDF أولًا');
-    return;
-  }
-  const pagesInput = el('f_pages') ? el('f_pages').value.trim() : state.book.pages;
-  state.book.pages = pagesInput;
-
-  el('pdfStatus').innerHTML = `<div class="loading" style="padding:14px"><div class="spinner"></div><div>جارِ استخراج النص من PDF...</div></div>`;
-
-  try{
-    const dataCopy = pdfFileData.slice(0); // getDocument detaches the buffer
-    const pdf = await pdfjsLib.getDocument({data: dataCopy}).promise;
-    const totalPages = pdf.numPages;
-    let pageNumbers = parsePageRange(pagesInput, totalPages);
-    if(!pageNumbers || pageNumbers.length === 0){
-      pageNumbers = Array.from({length: totalPages}, (_,i)=>i+1);
-    }
-    if(pageNumbers.length > 40){
-      pageNumbers = pageNumbers.slice(0,40);
-    }
-
-    let fullText = '';
-    for(const pNum of pageNumbers){
-      const page = await pdf.getPage(pNum);
-      const content = await page.getTextContent();
-      const pageText = content.items.map(it=>it.str).join(' ');
-      fullText += `\n\n--- صفحة ${pNum} ---\n${pageText}`;
-    }
-    fullText = fullText.trim();
-    if(!fullText){
-      el('pdfStatus').innerHTML = `<div class="error-box">⚠️ لم يتم العثور على نص قابل للاستخراج في هذه الصفحات (قد تكون صورًا ممسوحة ضوئيًا).</div>`;
-      return;
-    }
-    state.book.content = fullText;
-    el('pdfStatus').innerHTML = `<div class="small-muted" style="margin-top:8px">✅ تم استخراج النص من ${pageNumbers.length} صفحة (إجمالي صفحات الملف: ${totalPages}).</div>`;
-    el('f_content').value = fullText;
-    toast('تم استخراج المحتوى بنجاح ✅');
-  }catch(err){
-    console.error(err);
-    el('pdfStatus').innerHTML = `<div class="error-box">⚠️ تعذر قراءة الملف: ${err.message}</div>`;
-  }
-}
-
-function saveStep2AndNext(){
-  state.book.pages = el('f_pages').value.trim();
-  state.book.content = el('f_content').value.trim();
-  goStep(3);
-}
-
-// ---------- STEP 3: Review & Generate ----------
-function renderStep3(){
-  const l = state.lesson, b = state.book;
-  return `
-  <div class="card">
-    <h2>3️⃣ مراجعة وإنشاء</h2>
-    <p class="hint">تأكد من المعلومات ثم اضغط "إنشاء التحضير".</p>
-    <table class="meta-table">
-      <tr><td class="label">الصف</td><td>${l.grade || '-'}</td><td class="label">الشعبة</td><td>${l.section || '-'}</td></tr>
-      <tr><td class="label">المبحث</td><td colspan="3">${l.subject || '-'}</td></tr>
-      <tr><td class="label">الوحدة</td><td>${l.unit || '-'}</td><td class="label">عدد الحصص</td><td>${l.periods}</td></tr>
-      <tr><td class="label">عنوان الدرس</td><td colspan="3">${l.title || '-'}</td></tr>
-      <tr><td class="label">التاريخ</td><td colspan="3">${l.dateFrom || '-'} → ${l.dateTo || '-'}</td></tr>
-      <tr><td class="label">صفحات الكتاب</td><td colspan="3">${b.pages || 'غير محدد'}</td></tr>
-    </table>
-    <div id="genArea"></div>
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="goStep(2)">→ رجوع</button>
-      <button class="btn-primary" id="genBtn" onclick="generatePlan()">✨ إنشاء التحضير</button>
-    </div>
-  </div>`;
-}
-
-function bloomSystemPrompt(){
-  return `أنت خبير في التصميم التعليمي وإعداد خطط الدروس وفق تصنيف بلوم (Bloom's Taxonomy) ومطابق لنماذج وزارة التربية والتعليم. أجب بصيغة JSON صالحة فقط دون أي نص إضافي أو علامات markdown.`;
-}
-
-async function generatePlan(){
-  const btn = el('genBtn');
-  btn.disabled = true;
-  el('genArea').innerHTML = `<div class="loading"><div class="spinner"></div><div>جارِ إنشاء خطة الدرس بالذكاء الاصطناعي...</div></div>`;
-
-  const l = state.lesson, b = state.book;
-  const prompt = `أنشئ خطة درس كاملة بصيغة JSON بناءً على المعلومات التالية:
-
-الصف: ${l.grade}
-الشعبة: ${l.section || 'غير محدد'}
-المبحث: ${l.subject}
-الوحدة: ${l.unit || 'غير محدد'}
-عنوان الدرس: ${l.title}
-عدد الحصص: ${l.periods}
-التهيئة الحافزة المقترحة من المعلم: ${l.warmup || 'اقترح أنت تهيئة حافزة مناسبة'}
-مراجعة التعلم السابق: ${l.priorLearning || 'اقترح أنت مراجعة مناسبة'}
-نطاق صفحات الكتاب: ${b.pages || 'غير محدد'}
-محتوى الكتاب (إن وجد):
-${b.content || '(لا يوجد نص، اعتمد على عنوان الدرس والوحدة والمبحث)'}
-
-المطلوب: أعد JSON بالبنية التالية بالضبط (بالعربية الفصحى، مختصر وعملي، مناسب لعدد الحصص المحدد):
-
-{
-  "warmup": "نص التهيئة الحافزة",
-  "prior_learning": "نص مراجعة التعلم السابق",
-  "rows": [
-    {
-      "domain": "المعرفية" أو "الوجدانية" أو "المهارية-الأدائية",
-      "bloom_level": "أحد مستويات: تذكر، فهم، تطبيق، تحليل، تركيب، تقييم",
-      "outcome": "نتاج تعلم محدد وقابل للقياس يبدأ بفعل سلوكي مناسب للمستوى",
-      "time_minutes": رقم تقديري للوقت بالدقائق,
-      "content": "المحتوى التفصيلي المرتبط بالنتاج، مع الإشارة لرقم الصفحة إن توفر",
-      "strategy": "الاستراتيجية التعليمية-التعلمية المناسبة",
-      "thinking_key": "مفتاح تفكير مناسب (ماذا لو، المقارنة، التصنيف، الاستنتاج، حل المشكلات...) مع سؤال أو نشاط قصير يوظفه، أو نص فارغ إن لم يكن مناسبًا لهذا الصف",
-      "resources": "مصادر التعلم ووسائله",
-      "assessment_strategy": "استراتيجية التقويم (مثل: الملاحظة، التواصل، الورقة والقلم)",
-      "assessment_tool": "أداة التقويم (مثل: سلم تقدير، سجل وصف، اختبار قصير)"
-    }
-  ],
-  "feedback": "نص التغذية الراجعة يصف نشاطًا ختاميًا يوضح تحقق النتاجات"
-}
-
-أنشئ ما بين 6 إلى 9 صفوف موزعة على المجالات الثلاثة (معرفي، وجداني، مهاري) بحيث تغطي عدة مستويات من هرم بلوم بشكل منطقي ومترابط مع محتوى الدرس. أعد JSON فقط بدون أي شرح.`;
-
-  try{
-    const text = await callClaude(prompt, bloomSystemPrompt());
-    const json = extractJSON(text);
-    state.plan = json;
-    goStep(4);
-  }catch(err){
-    el('genArea').innerHTML = `<div class="error-box">⚠️ حدث خطأ أثناء إنشاء التحضير: ${err.message}. حاول مرة أخرى.</div>`;
-    btn.disabled = false;
-  }
-}
-
-// ---------- STEP 4: Result + actions ----------
-function renderStep4(){
-  const l = state.lesson, b = state.book, p = state.plan;
-  if(!p) return `<div class="card">لا توجد بيانات بعد.</div>`;
-
-  let rows = '';
-  let counter = 1;
-  const grouped = {};
-  p.rows.forEach(r=>{
-    if(!grouped[r.domain]) grouped[r.domain] = [];
-    grouped[r.domain].push(r);
-  });
-  Object.keys(grouped).forEach(domain=>{
-    grouped[domain].forEach((r, idx)=>{
-      rows += `<tr>
-        <td>${counter++}</td>
-        ${idx===0 ? `<td class="domain-cell" rowspan="${grouped[domain].length}">${domain}</td>` : ''}
-        <td>${r.bloom_level || ''}<br><span style="font-weight:400">${r.outcome || ''}</span></td>
-        <td>${r.time_minutes || ''} د</td>
-        <td style="text-align:right">${r.content || ''}</td>
-        <td style="text-align:right">${r.strategy || ''}${r.thinking_key ? `<br><b>مفتاح التفكير:</b> ${r.thinking_key}`:''}</td>
-        <td>${r.resources || ''}</td>
-        <td>${r.assessment_strategy || ''}</td>
-        <td>${r.assessment_tool || ''}</td>
-      </tr>`;
-    });
-  });
-
-  return `
-  <div class="card">
-    <div class="top-nav">
-      <h2 style="margin:0">✅ خطة الدرس جاهزة</h2>
-      <button class="btn-ghost" onclick="goStep(3)">✏️ تعديل البيانات</button>
-    </div>
-    <table class="meta-table">
-      <tr><td class="label">الصف</td><td>${l.grade}</td><td class="label">الشعبة</td><td>${l.section||'-'}</td></tr>
-      <tr><td class="label">المبحث</td><td colspan="3">${l.subject}</td></tr>
-      <tr><td class="label">الوحدة</td><td>${l.unit||'-'}</td><td class="label">عدد الحصص</td><td>${l.periods}</td></tr>
-      <tr><td class="label">عنوان الدرس</td><td colspan="3">${l.title}</td></tr>
-      <tr><td class="label">التاريخ</td><td colspan="3">${l.dateFrom||'-'} → ${l.dateTo||'-'}</td></tr>
-      <tr><td class="label">التهيئة الحافزة</td><td colspan="3" style="text-align:right">${p.warmup||''}</td></tr>
-      <tr><td class="label">التعلم السابق</td><td colspan="3" style="text-align:right">${p.prior_learning||''}</td></tr>
-    </table>
-
-    <div style="overflow-x:auto">
-    <table class="plan-table">
-      <tr>
-        <th>الرقم</th><th>المجال / المستوى ونتاج التعلم</th><th>الزمن</th><th>المحتوى</th>
-        <th>الاستراتيجيات ومفاتيح التفكير</th><th>مصادر التعلم</th><th>استراتيجية التقويم</th><th>أداة التقويم</th>
-      </tr>
-      ${rows}
-    </table>
-    </div>
-
-    <div class="section-title">التغذية الراجعة</div>
-    <p style="font-size:13px;text-align:right">${p.feedback||''}</p>
-
-    <button class="btn-secondary" style="margin-top:8px" onclick="downloadPlanWord()">⬇️ تحميل خطة الدرس (Word)</button>
-  </div>
-
-  <div class="card">
-    <h2>🚀 أدوات إضافية</h2>
-    <p class="hint">أنشئ أسئلة، عرضًا تقديميًا، أو تلخيصًا للدرس بضغطة واحدة.</p>
-    <div class="action-grid">
-      <button class="action-btn ${state.busyAction==='q'?'busy':''}" onclick="generateQuestions()">
-        <span class="emoji">📝</span> إنشاء أسئلة (20 سؤال)
-      </button>
-      <button class="action-btn ${state.busyAction==='p'?'busy':''}" onclick="generatePresentation()">
-        <span class="emoji">🖥️</span> عرض تقديمي
-      </button>
-      <button class="action-btn ${state.busyAction==='s'?'busy':''}" onclick="generateSummary()">
-        <span class="emoji">📄</span> تلخيص الدرس
-      </button>
-      <button class="action-btn" onclick="startNew()">
-        <span class="emoji">🔄</span> تحضير درس جديد
-      </button>
-    </div>
-    <div id="extraArea"></div>
-  </div>`;
-}
-
-function startNew(){
-  state.step = 1;
-  state.plan = null; state.questions=null; state.presentation=null; state.summary=null;
-  state.lesson = {grade:"",section:"",subject:"",unit:"",title:"",dateFrom:"",dateTo:"",periods:"1",warmup:"",priorLearning:""};
-  state.book = {pages:"",content:""};
-  render();
-}
-
-// ---------- Questions ----------
-async function generateQuestions(){
-  if(state.busyAction) return;
-  state.busyAction = 'q';
-  render();
-  el('extraArea').innerHTML = `<div class="loading"><div class="spinner"></div><div>جارِ إنشاء الأسئلة...</div></div>`;
-
-  const l = state.lesson, b = state.book;
-  const prompt = `بناءً على درس بعنوان "${l.title}" (المبحث: ${l.subject}، الصف: ${l.grade})، ومحتوى الكتاب التالي إن وجد:
-${b.content || '(استخدم معرفتك العامة بموضوع الدرس)'}
-
-أنشئ JSON بالبنية التالية فقط:
-{
-  "true_false": [ {"question":"نص السؤال", "answer": true أو false} ... 10 عناصر ],
-  "multiple_choice": [ {"question":"نص السؤال", "options":["أ","ب","ج","د"], "correct_index": 0 } ... 10 عناصر ]
-}
-الأسئلة يجب أن تكون واضحة، متدرجة الصعوبة، ومناسبة للصف الدراسي. أعد JSON فقط بدون شرح.`;
-
-  try{
-    const text = await callClaude(prompt, bloomSystemPrompt());
-    state.questions = extractJSON(text);
-    renderQuestionsResult();
-  }catch(err){
-    el('extraArea').innerHTML = `<div class="error-box">⚠️ تعذر إنشاء الأسئلة: ${err.message}</div>`;
-  }
-  state.busyAction = null;
-}
-
-function renderQuestionsResult(){
-  const q = state.questions;
-  let html = `<div class="badge">✅ 10 صح/خطأ + 10 اختيار من متعدد</div>`;
-  html += `<div class="section-title">صح / خطأ</div>`;
-  q.true_false.forEach((item,i)=>{
-    html += `<div class="qcard"><b>${i+1}.</b> ${item.question} <div class="correct">الإجابة: ${item.answer ? 'صح ✔️' : 'خطأ ❌'}</div></div>`;
-  });
-  html += `<div class="section-title">اختيار من متعدد</div>`;
-  q.multiple_choice.forEach((item,i)=>{
-    let opts = item.options.map((o,idx)=>`<div class="opt ${idx===item.correct_index?'correct':''}">${['أ','ب','ج','د'][idx]}. ${o}</div>`).join('');
-    html += `<div class="qcard"><b>${i+1}.</b> ${item.question}${opts}</div>`;
-  });
-  html += `<button class="btn-secondary" style="margin-top:6px" onclick="downloadQuestionsWord()">⬇️ تحميل الأسئلة (Word)</button>`;
-  el('extraArea').innerHTML = html;
-}
-
-// ---------- Presentation ----------
-async function generatePresentation(){
-  if(state.busyAction) return;
-  state.busyAction = 'p';
-  render();
-  el('extraArea').innerHTML = `<div class="loading"><div class="spinner"></div><div>جارِ إعداد العرض التقديمي...</div></div>`;
-
-  const l = state.lesson, b = state.book;
-  const prompt = `أنشئ محتوى عرض تقديمي تعليمي (10-12 شريحة) لدرس بعنوان "${l.title}" (${l.subject}، الصف ${l.grade}).
-محتوى الكتاب: ${b.content || '(استخدم معرفتك العامة)'}
-أعد JSON فقط بالبنية:
-{ "slides": [ {"title":"عنوان الشريحة", "bullets": ["نقطة 1","نقطة 2","نقطة 3"]} ... ] }
-الشريحة الأولى عنوان الدرس، وآخر شريحة ملخص/تلخيص. أعد JSON فقط.`;
-
-  try{
-    const text = await callClaude(prompt, bloomSystemPrompt());
-    state.presentation = extractJSON(text);
-    renderPresentationResult();
-  }catch(err){
-    el('extraArea').innerHTML = `<div class="error-box">⚠️ تعذر إنشاء العرض: ${err.message}</div>`;
-  }
-  state.busyAction = null;
-}
-
-function renderPresentationResult(){
-  const p = state.presentation;
-  let html = `<div class="badge">🖥️ ${p.slides.length} شريحة</div>`;
-  p.slides.forEach((s,i)=>{
-    html += `<div class="qcard"><b>شريحة ${i+1}: ${s.title}</b>`;
-    s.bullets.forEach(b=> html += `<div class="opt">• ${b}</div>`);
-    html += `</div>`;
-  });
-  html += `<button class="btn-secondary" style="margin-top:6px" onclick="downloadPresentationWord()">⬇️ تحميل العرض (Word)</button>`;
-  el('extraArea').innerHTML = html;
-}
-
-// ---------- Summary ----------
-async function generateSummary(){
-  if(state.busyAction) return;
-  state.busyAction = 's';
-  render();
-  el('extraArea').innerHTML = `<div class="loading"><div class="spinner"></div><div>جارِ تلخيص الدرس...</div></div>`;
-
-  const l = state.lesson, b = state.book;
-  const prompt = `لخّص درس "${l.title}" (${l.subject}، الصف ${l.grade}) في ملخص تعليمي منظم للطلاب.
-محتوى الكتاب: ${b.content || '(استخدم معرفتك العامة)'}
-أعد JSON فقط بالبنية:
-{ "intro":"مقدمة قصيرة", "key_points": ["نقطة رئيسية 1","..."], "key_terms":[{"term":"مصطلح","definition":"تعريف موجز"}], "conclusion":"خلاصة قصيرة" }`;
-
-  try{
-    const text = await callClaude(prompt, bloomSystemPrompt());
-    state.summary = extractJSON(text);
-    renderSummaryResult();
-  }catch(err){
-    el('extraArea').innerHTML = `<div class="error-box">⚠️ تعذر إنشاء الملخص: ${err.message}</div>`;
-  }
-  state.busyAction = null;
-}
-
-function renderSummaryResult(){
-  const s = state.summary;
-  let html = `<div class="badge">📄 ملخص الدرس</div>`;
-  html += `<div class="qcard">${s.intro}</div>`;
-  html += `<div class="section-title">أهم النقاط</div>`;
-  html += `<div class="qcard">${s.key_points.map(k=>`• ${k}`).join('<br>')}</div>`;
-  if(s.key_terms && s.key_terms.length){
-    html += `<div class="section-title">مصطلحات مهمة</div>`;
-    html += `<div class="qcard">${s.key_terms.map(t=>`<b>${t.term}:</b> ${t.definition}`).join('<br>')}</div>`;
-  }
-  html += `<div class="section-title">الخلاصة</div><div class="qcard">${s.conclusion}</div>`;
-  html += `<button class="btn-secondary" style="margin-top:6px" onclick="downloadSummaryWord()">⬇️ تحميل الملخص (Word)</button>`;
-  el('extraArea').innerHTML = html;
-}
-
-// ---------- Word export (HTML->.doc) ----------
-function wrapWordDoc(bodyHtml, title){
-  return `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-  <head><meta charset='utf-8'><title>${title}</title>
-  <style>
-    body{font-family:'Calibri','Arial',sans-serif; direction:rtl;}
-    table{border-collapse:collapse;width:100%;}
-    td,th{border:1px solid #888;padding:6px;font-size:12px;text-align:center;}
-    th{background:#eaf3ef;}
-    h1{color:#0a5346;font-size:20px;}
-    h2{color:#0a5346;font-size:15px;border-right:4px solid #c8963e;padding-right:8px;}
-  </style></head>
-  <body>${bodyHtml}</body></html>`;
-}
-
-function triggerDownload(html, filename){
-  const blob = new Blob(['\ufeff', html], {type:'application/msword'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('تم تنزيل الملف ✅');
-}
-
-function downloadPlanWord(){
-  const l = state.lesson, p = state.plan;
-  let rows = '';
-  let counter=1;
-  const grouped = {};
-  p.rows.forEach(r=>{ if(!grouped[r.domain]) grouped[r.domain]=[]; grouped[r.domain].push(r); });
-  Object.keys(grouped).forEach(domain=>{
-    grouped[domain].forEach((r,idx)=>{
-      rows += `<tr>
-        <td>${counter++}</td>
-        ${idx===0?`<td>${domain}</td>`:'<td></td>'}
-        <td>${r.bloom_level||''}<br>${r.outcome||''}</td>
-        <td>${r.time_minutes||''} د</td>
-        <td style="text-align:right">${r.content||''}</td>
-        <td style="text-align:right">${r.strategy||''}${r.thinking_key?`<br><b>مفتاح التفكير:</b> ${r.thinking_key}`:''}</td>
-        <td>${r.resources||''}</td>
-        <td>${r.assessment_strategy||''}</td>
-        <td>${r.assessment_tool||''}</td>
-      </tr>`;
-    });
-  });
-  const body = `
-    <h1>خطة الدرس: ${l.title}</h1>
-    <table>
-      <tr><td><b>الصف</b></td><td>${l.grade}</td><td><b>الشعبة</b></td><td>${l.section||'-'}</td></tr>
-      <tr><td><b>المبحث</b></td><td colspan="3">${l.subject}</td></tr>
-      <tr><td><b>الوحدة</b></td><td>${l.unit||'-'}</td><td><b>عدد الحصص</b></td><td>${l.periods}</td></tr>
-      <tr><td><b>التاريخ</b></td><td colspan="3">${l.dateFrom||'-'} → ${l.dateTo||'-'}</td></tr>
-      <tr><td><b>التهيئة الحافزة</b></td><td colspan="3" style="text-align:right">${p.warmup||''}</td></tr>
-      <tr><td><b>التعلم السابق</b></td><td colspan="3" style="text-align:right">${p.prior_learning||''}</td></tr>
-    </table>
-    <br>
-    <table>
-      <tr><th>الرقم</th><th>المجال</th><th>المستوى / النتاج</th><th>الزمن</th><th>المحتوى</th><th>الاستراتيجيات ومفاتيح التفكير</th><th>مصادر التعلم</th><th>استراتيجية التقويم</th><th>أداة التقويم</th></tr>
-      ${rows}
-    </table>
-    <br>
-    <h2>التغذية الراجعة</h2>
-    <p>${p.feedback||''}</p>
-    <br><br>
-    <h2>التأمل الذاتي</h2>
-    <table>
-      <tr><td><b>أشعر بالرضا عن:</b></td><td></td></tr>
-      <tr><td><b>تحديات واجهتني:</b></td><td></td></tr>
-      <tr><td><b>اقتراحات للتحسين:</b></td><td></td></tr>
-    </table>
-  `;
-  triggerDownload(wrapWordDoc(body, l.title), `تحضير_${l.title||'الدرس'}.doc`);
-}
-
-function downloadQuestionsWord(){
-  const q = state.questions, l = state.lesson;
-  let tf = q.true_false.map((it,i)=>`<p>${i+1}. ${it.question} — <b>(${it.answer?'صح':'خطأ'})</b></p>`).join('');
-  let mc = q.multiple_choice.map((it,i)=>{
-    let opts = it.options.map((o,idx)=>`<p style="margin:2px 20px">${['أ','ب','ج','د'][idx]}. ${o} ${idx===it.correct_index?'✔️':''}</p>`).join('');
-    return `<p>${i+1}. ${it.question}</p>${opts}`;
-  }).join('');
-  const body = `<h1>أسئلة درس: ${l.title}</h1><h2>أولاً: صح وخطأ</h2>${tf}<h2>ثانياً: اختيار من متعدد</h2>${mc}`;
-  triggerDownload(wrapWordDoc(body, 'أسئلة'), `أسئلة_${l.title||'الدرس'}.doc`);
-}
-
-function downloadPresentationWord(){
-  const p = state.presentation, l = state.lesson;
-  let slides = p.slides.map((s,i)=>`<h2>شريحة ${i+1}: ${s.title}</h2><p>${s.bullets.map(b=>'• '+b).join('<br>')}</p>`).join('<br>');
-  triggerDownload(wrapWordDoc(`<h1>عرض تقديمي: ${l.title}</h1>${slides}`, 'عرض'), `عرض_${l.title||'الدرس'}.doc`);
-}
-
-function downloadSummaryWord(){
-  const s = state.summary, l = state.lesson;
-  const terms = (s.key_terms||[]).map(t=>`<p><b>${t.term}:</b> ${t.definition}</p>`).join('');
-  const body = `<h1>تلخيص درس: ${l.title}</h1>
-    <p>${s.intro}</p>
-    <h2>أهم النقاط</h2>
-    <p>${s.key_points.map(k=>'• '+k).join('<br>')}</p>
-    <h2>مصطلحات مهمة</h2>${terms}
-    <h2>الخلاصة</h2><p>${s.conclusion}</p>`;
-  triggerDownload(wrapWordDoc(body, 'ملخص'), `ملخص_${l.title||'الدرس'}.doc`);
-}
-
-// ---------- Settings / API Key modal ----------
-function updateKeyBadge(){
-  const key = getApiKey();
-  el('keyBadge').textContent = key ? '🔑 متصل' : '⚠️ لا يوجد مفتاح';
-}
-
-function openSettings(){
-  const key = getApiKey();
-  el('modalRoot').innerHTML = `
-  <div class="modal-overlay" onclick="if(event.target===this) closeSettings()">
-    <div class="modal-box">
-      <button class="modal-close" onclick="closeSettings()">✕</button>
-      <h3>⚙️ إعداد مفتاح Claude API</h3>
-      <p class="hint" style="text-align:right">
-        هذا التطبيق مستقل ويعمل من متصفحك مباشرة، لذا يحتاج مفتاح API خاص بك للاتصال بالذكاء الاصطناعي.
-        احصل على مفتاح مجاني من
-        <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>
-        (تسجيل حساب ثم "Create Key"). يُحفظ المفتاح في متصفحك فقط ولا يُرسل لأي جهة أخرى.
-      </p>
-      <label>مفتاح API (يبدأ بـ sk-ant-...)</label>
-      <input type="text" id="apiKeyInput" placeholder="sk-ant-api03-..." value="${key}" style="direction:ltr;text-align:left;font-family:monospace">
-      <div class="btn-row">
-        <button class="btn-secondary" onclick="closeSettings()">إلغاء</button>
-        <button class="btn-primary" onclick="saveApiKey()">حفظ</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function closeSettings(){
-  el('modalRoot').innerHTML = '';
-}
-
-function saveApiKey(){
-  const val = el('apiKeyInput').value.trim();
-  if(!val.startsWith('sk-ant')){
-    toast('المفتاح غير صالح — يجب أن يبدأ بـ sk-ant');
-    return;
-  }
-  setApiKey(val);
-  updateKeyBadge();
-  closeSettings();
-  toast('تم حفظ المفتاح ✅');
-}
-
-// ---------- Main render ----------
-function render(){
-  renderStepsBar();
-  let html = '';
-  if(state.step===1) html = renderStep1();
-  else if(state.step===2) html = renderStep2();
-  else if(state.step===3) html = renderStep3();
-  else if(state.step===4) html = renderStep4();
-  el('app').innerHTML = html;
-}
-
-render();
-updateKeyBadge();
-if(!getApiKey()){
-  setTimeout(openSettings, 400);
-}
-</script>
+    <script>
+        // تثبيت مفتاح API الخاص بـ Gemini هنا ليعمل تلقائياً
+        const GEMINI_API_KEY = "ضع_مفتاح_API_الخاص_بك_هنا";
+
+        function validateLogin() {
+            const emailInput = document.getElementById('user-email').value.trim().toLowerCase();
+            const errorMsg = document.getElementById('login-error');
+
+            if (emailInput.endsWith('@ipa.edu.jo')) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        async function generateLesson() {
+            const subject = document.getElementById('subject').value;
+            const topic = document.getElementById('topic').value;
+            const notes = document.getElementById('notes').value;
+            const outputDiv = document.getElementById('output');
+
+            if (!subject || !topic) {
+                alert('يرجى كتابة المادة وعنوان الدرس');
+                return;
+            }
+
+            outputDiv.innerText = "جاري كتابة التحضير بالذكاء الاصطناعي...";
+
+            const promptText = `قم بتحضير درس متكامل للمادة: ${subject}، بعنوان: ${topic}. الملاحظات: ${notes}. قم بتضمين الأهداف السلوكية، التمهيد، الإجراءات، والتقويم التكويني.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    outputDiv.innerText = data.candidates[0].content.parts[0].text;
+                } else {
+                    outputDiv.innerText = "حدث خطأ أثناء التوليد، يرجى التأكد من صحة مفتاح Gemini API.";
+                }
+            } catch (err) {
+                outputDiv.innerText = "خطأ في الاتصال: " + err.message;
+            }
+        }
+    </script>
 </body>
 </html>
