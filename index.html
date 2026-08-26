@@ -36,7 +36,7 @@
   header.app-header h1{margin:0;font-size:20px;font-weight:700;}
   header.app-header p{margin:6px 0 0;font-size:13px;opacity:.9;}
 
-  /* Login Overlay */
+  /* Login Modal */
   .login-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(15, 110, 92, 0.95);
@@ -93,23 +93,6 @@
   .btn-row{display:flex;gap:10px;margin-top:16px;}
   .btn-row button{flex:1;}
 
-  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-  .action-btn{
-    background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px 10px;
-    text-align:center;color:var(--text);font-size:13.5px;font-weight:700;
-  }
-  .action-btn .emoji{font-size:22px;display:block;margin-bottom:6px;}
-
-  .loading{
-    display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 10px;color:var(--muted);
-  }
-  .spinner{
-    width:34px;height:34px;border-radius:50%;
-    border:4px solid #e3e8e6;border-top-color:var(--primary);
-    animation:spin 0.8s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg);}}
-
   table.plan-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;}
   table.plan-table th, table.plan-table td{
     border:1px solid #cfd8d4;padding:6px 5px;text-align:center;vertical-align:top;line-height:1.5;
@@ -120,14 +103,7 @@
   .meta-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12.5px;}
   .meta-table td{border:1px solid #cfd8d4;padding:7px 8px;}
   .meta-table td.label{background:#eaf3ef;font-weight:700;width:110px;color:var(--primary-dark);}
-  .section-title{font-weight:700;color:var(--primary-dark);font-size:14px;margin:18px 0 8px;border-right:4px solid var(--accent);padding-right:8px;}
 
-  .qcard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:13.5px;}
-  .qcard b{color:var(--primary-dark);}
-  .qcard .opt{margin:4px 0 0 4px;color:var(--text);}
-  .qcard .correct{color:var(--primary);font-weight:700;}
-
-  .badge{display:inline-block;background:#eaf3ef;color:var(--primary-dark);font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;margin-bottom:8px;}
   .error-box{background:#fbeceb;color:var(--danger);border:1px solid #f0c9c6;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:10px;}
   .toast{
     position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
@@ -150,28 +126,32 @@
     background:#eaf3ef;border-radius:10px;padding:9px 12px;margin-top:10px;font-size:13px;color:var(--primary-dark);
   }
   .file-chip .rm{color:var(--danger);cursor:pointer;font-weight:700;}
-  .divider-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:12px;}
-  .divider-or::before,.divider-or::after{content:"";flex:1;height:1px;background:var(--border);}
+  .instruction-box {
+    background: #eaf3ef; border: 1px solid var(--primary);
+    border-radius: 12px; padding: 12px; margin-bottom: 15px; font-size: 13px; line-height: 1.6;
+  }
+  .instruction-box ol { margin: 6px 0 0; padding-right: 20px; }
 </style>
 </head>
 <body>
 
-<!-- شاشة الدخول المخصصة لكادر الأكاديمية -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
     <h2>🏫 دخول الكادر التعليمي</h2>
     <p>أدخل بريدك الإلكتروني الخاص بأكاديمية الرواد الدولية للاستمرار</p>
-    <div style="margin-bottom: 15px;">
-      <input type="email" id="loginEmail" placeholder="username@ipa.edu.jo" dir="ltr" style="text-align: center;">
-    </div>
-    <div id="loginError" style="margin-bottom: 10px;"></div>
-    <button class="btn-primary" onclick="validateLogin()">تسجيل الدخول</button>
+    <form onsubmit="event.preventDefault(); validateLogin();">
+      <div style="margin-bottom: 15px;">
+        <input type="email" id="loginEmail" placeholder="username@ipa.edu.jo" dir="ltr" style="text-align: center;" required>
+      </div>
+      <div id="loginError" style="margin-bottom: 10px;"></div>
+      <button type="submit" class="btn-primary">تسجيل الدخول</button>
+    </form>
   </div>
 </div>
 
 <header class="app-header">
   <h1>📘 مساعد تحضير الدروس الذكي - الرواد</h1>
-  <p>توليد خطط الدروس والأنشطة تلقائيًا عبر الذكاء الاصطناعي</p>
+  <p>إعداد تحضير الدروس وفق المعايير الوزارية للأكاديمية</p>
 </header>
 
 <div class="steps-bar" id="stepsBar"></div>
@@ -181,9 +161,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// مفتاح API الخاص بك يتم ربطه هنا تلقائياً دون إظهاره للمستخدم
-const MY_API_KEY = AQ.Ab8RN6KGVuxq-31cBEP45O68MH-cuHwEVgsHn2ReUXFswpz7nw;
-
 const state = {
   authenticated: false,
   userEmail: "",
@@ -194,11 +171,7 @@ const state = {
     warmup:"", priorLearning:""
   },
   book: { pages:"", content:"", fileName:"" },
-  plan: null,
-  questions: null,
-  presentation: null,
-  summary: null,
-  loading: false
+  plan: null
 };
 
 if(window.pdfjsLib){
@@ -214,25 +187,24 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'), 2600);
 }
 
-// التحقق من البريد الإلكتروني الخاص بالأكاديمية
 function validateLogin(){
   const emailInput = el('loginEmail').value.trim().toLowerCase();
   const errDiv = el('loginError');
   
   if(!emailInput.endsWith('@ipa.edu.jo')){
-    errDiv.innerHTML = `<div class="error-box">عذراً، يرجى استخدام بريد إلكتروني ينتهي بـ @ipa.edu.jo</div>`;
+    errDiv.innerHTML = `<div class="error-box">عذراً، يجب أن ينتهي البريد بـ @ipa.edu.jo</div>`;
     return;
   }
 
   state.authenticated = true;
   state.userEmail = emailInput;
   el('loginOverlay').style.display = 'none';
-  toast('أهلاً بك في المساعد الذكي 👋');
+  toast('تم تسجيل الدخول بنجاح 👋');
   render();
 }
 
 function renderStepsBar(){
-  const total = 3;
+  const total = 4;
   let html = '';
   for(let i=1;i<=total;i++){
     let cls = 'dot';
@@ -254,35 +226,10 @@ function extractJSON(text){
   t = t.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
   const start = t.indexOf('{');
   const end = t.lastIndexOf('}');
-  if(start === -1 || end === -1) throw new Error("تعذر تحليل الاستجابة من الخدمة");
+  if(start === -1 || end === -1) throw new Error("تأكد من نسخ كود الـ JSON كاملاً من الذكاء الاصطناعي");
   return JSON.parse(t.slice(start, end+1));
 }
 
-// الاتصال التلقائي بالـ API في الخلفية
-async function callGeminiAPI(promptText) {
-  if(!MY_API_KEY || MY_API_KEY.includes("ضع_مفتاح")){
-    throw new Error("يرجى ضبط متغير MY_API_KEY في السكربت بمفتاح Google Gemini الخارجي.");
-  }
-  const url = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$){MY_API_KEY}`;
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: promptText }] }]
-    })
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error?.message || "حدث خطأ أثناء التواصل مع الخدمة الذكية");
-  }
-
-  const rawText = data.candidates[0].content.parts[0].text;
-  return extractJSON(rawText);
-}
-
-// ---------- STEP 1: Lesson info ----------
 function renderStep1(){
   const l = state.lesson;
   return `
@@ -355,27 +302,26 @@ function saveStep1AndNext(){
   l.priorLearning = el('f_prior').value.trim();
 
   if(!l.grade || !l.subject || !l.title){
-    toast("يرجى تعبئة الصف والمبحث وعنوان الدرس على الأقل");
+    toast("يرجى تعبئة الحقول الأساسية المطلوبة");
     return;
   }
   goStep(2);
 }
 
-// ---------- STEP 2: Book content ----------
 function renderStep2(){
   const b = state.book;
   return `
   <div class="card">
-    <h2>2️⃣ محتوى الكتاب وتوليد الخطة</h2>
-    <p class="hint">ارفع ملف PDF واستخرج الصفحات، أو الصق النص مباشرة للبدء بالتوليد التلقائي.</p>
+    <h2>2️⃣ محتوى الكتاب</h2>
+    <p class="hint">رفع ملف PDF أو الصاق النص مباشرة.</p>
 
-    <label>نطاق الصفحات المطلوبة</label>
+    <label>نطاق الصفحات</label>
     <input type="text" id="f_pages" placeholder="مثال: 45-51" value="${b.pages}" oninput="state.book.pages=this.value">
 
-    <label style="margin-top:16px">رفع ملف الكتاب (PDF)</label>
+    <label style="margin-top:16px">رفع ملف PDF</label>
     <label class="upload-box" for="pdfInput">
       <span class="emoji">📄</span>
-      <span>${b.fileName ? 'اضغط لاستبدال الملف' : 'اختيار ملف PDF من جهازك'}</span>
+      <span>${b.fileName ? 'تغيير الملف' : 'اختيار ملف PDF من جهازك'}</span>
       <input type="file" id="pdfInput" accept="application/pdf" onchange="handlePdfUpload(event)">
     </label>
     ${b.fileName ? `<div class="file-chip"><span>📎 ${b.fileName}</span><span class="rm" onclick="clearPdf()">إزالة ✕</span></div>` : ''}
@@ -383,21 +329,15 @@ function renderStep2(){
     <div id="pdfStatus"></div>
 
     <button class="btn-secondary" style="margin-top:12px" onclick="extractPdfPages()" ${!b.fileName ? 'disabled' : ''}>
-      🔍 استخراج المحتوى من الصفحات المحددة
+      🔍 استخراج المحتوى
     </button>
 
-    <div class="divider-or">أو النص المباشر</div>
-
-    <label>نص محتوى الدرس</label>
+    <label style="margin-top:15px;">نص الكتاب</label>
     <textarea id="f_content" style="min-height:120px" placeholder="الصق نص الصفحات هنا..." oninput="state.book.content=this.value">${b.content}</textarea>
-
-    <div id="apiError"></div>
 
     <div class="btn-row">
       <button class="btn-secondary" onclick="goStep(1)">→ رجوع</button>
-      <button class="btn-primary" style="background:var(--accent)" onclick="generatePlanAuto()" ${state.loading ? 'disabled':''}>
-        ${state.loading ? 'جارِ التوليد الذكي...' : '✨ توليد الخطة تلقائياً'}
-      </button>
+      <button class="btn-primary" onclick="saveStep2AndNext()">التالي ←</button>
     </div>
   </div>`;
 }
@@ -419,49 +359,48 @@ function clearPdf(){ pdfFileData = null; state.book.fileName = ""; render(); }
 
 async function extractPdfPages(){
   if(!pdfFileData) return;
-  const pagesInput = el('f_pages').value.trim();
-  el('pdfStatus').innerHTML = `<div class="loading"><div class="spinner"></div><div>جارِ استخراج النص...</div></div>`;
+  el('pdfStatus').innerHTML = `<div class="loading"><div class="spinner"></div><div>جاري القراءة...</div></div>`;
   try{
     const pdf = await pdfjsLib.getDocument({data: pdfFileData.slice(0)}).promise;
-    let pageNumbers = Array.from({length: pdf.numPages}, (_,i)=>i+1);
     let fullText = '';
-    for(const pNum of pageNumbers.slice(0, 30)){
-      const page = await pdf.getPage(pNum);
+    for(let i=1; i<=Math.min(pdf.numPages, 30); i++){
+      const page = await pdf.getPage(i);
       const content = await page.getTextContent();
       fullText += `\n ${content.items.map(it=>it.str).join(' ')}`;
     }
     state.book.content = fullText.trim();
     el('f_content').value = state.book.content;
-    el('pdfStatus').innerHTML = `<div class="small-muted" style="margin-top:8px">✅ تم استخراج المحتوى.</div>`;
+    el('pdfStatus').innerHTML = `<div class="small-muted" style="margin-top:8px">✅ تم استخراج النص بنجاح.</div>`;
   }catch(err){
     el('pdfStatus').innerHTML = `<div class="error-box">⚠️ تعذر القراءة: ${err.message}</div>`;
   }
 }
 
-async function generatePlanAuto(){
+function saveStep2AndNext(){
+  state.book.pages = el('f_pages').value.trim();
   state.book.content = el('f_content').value.trim();
-  state.loading = true;
-  render();
+  goStep(3);
+}
 
+function buildPlanPrompt(){
   const l = state.lesson, b = state.book;
-  const prompt = `أنت خبير في التصميم التعليمي ومطابق لنماذج وزارة التربية.
-أنشئ خطة درس بصيغة JSON فقط:
-الصف: ${l.grade} | المبحث: ${l.subject} | الدرس: ${l.title} | عدد الحصص: ${l.periods}
-المحتوى: ${b.content || 'معارف الدرس العامة'}
+  return `أنت خبير في التصميم التعليمي. أنشئ خطة درس بصيغة JSON فقط بناءً على:
+الصف: ${l.grade} | المبحث: ${l.subject} | الدرس: ${l.title}
+المحتوى: ${b.content || 'المعلومات العامة للدرس'}
 
-البنية المطلوبة لـ JSON حصراً:
+JSON المطلوب بنفس التنسيق:
 {
-  "warmup": "التهيئة",
-  "prior_learning": "التعلم السابق",
+  "warmup": "التهيئة الحافزة",
+  "prior_learning": "مراجعة التعلم السابق",
   "rows": [
     {
-      "domain": "المعرفية أو الوجدانية أو المهارية-الأدائية",
+      "domain": "المعرفية أو الوجدانية أو المهارية",
       "bloom_level": "تذكر/فهم/تطبيق...",
       "outcome": "نتاج التعلم",
       "time_minutes": 10,
       "content": "المحتوى",
       "strategy": "استراتيجية التدريس",
-      "thinking_key": "مفتاح تفكير",
+      "thinking_key": "مفتاح التفكير",
       "resources": "مصادر التعلم",
       "assessment_strategy": "استراتيجية التقويم",
       "assessment_tool": "أداة التقويم"
@@ -469,29 +408,62 @@ async function generatePlanAuto(){
   ],
   "feedback": "التغذية الراجعة"
 }`;
+}
 
+function renderStep3(){
+  return `
+  <div class="card">
+    <h2>3️⃣ توليد التحضير عبر الذكاء الاصطناعي</h2>
+    
+    <div class="instruction-box">
+      <b>📌 الخطوات السريعة:</b>
+      <ol>
+        <li>اضغط <b>"نسخ أمر التوليد"</b>.</li>
+        <li>الصقه في ChatGPT / Claude / Gemini.</li>
+        <li>انسخ نتيجة الـ JSON من الذكاء الاصطناعي والصقها هنا.</li>
+      </ol>
+    </div>
+
+    <button class="btn-primary" onclick="copyMasterPrompt()">📋 1. نسخ أمر التوليد</button>
+    
+    <div style="margin-top:15px;">
+      <label>2. الصق الـ JSON الناتج هنا:</label>
+      <textarea id="ai_response_input" style="min-height:120px" placeholder="الصق الكود هنا..."></textarea>
+    </div>
+
+    <div id="parseError"></div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goStep(2)">→ رجوع</button>
+      <button class="btn-primary" style="background:var(--accent)" onclick="processAIPlan()">✨ 3. عرض التحضير</button>
+    </div>
+  </div>`;
+}
+
+function copyMasterPrompt(){
+  navigator.clipboard.writeText(buildPlanPrompt()).then(()=>{
+    toast("تم نسخ الأمر بنجاح ✅");
+  });
+}
+
+function processAIPlan(){
+  const input = el('ai_response_input').value.trim();
+  if(!input){ toast("يرجى إلصاق النتيجة أولاً"); return; }
   try{
-    const result = await callGeminiAPI(prompt);
-    state.plan = result;
-    state.loading = false;
-    goStep(3);
+    state.plan = extractJSON(input);
+    goStep(4);
   }catch(err){
-    state.loading = false;
-    render();
-    el('apiError').innerHTML = `<div class="error-box">⚠️ فشل التوليد التلقائي: ${err.message}</div>`;
+    el('parseError').innerHTML = `<div class="error-box">⚠️ ${err.message}</div>`;
   }
 }
 
-// ---------- STEP 3: Result ----------
-function renderStep3(){
+function renderStep4(){
   const l = state.lesson, p = state.plan;
   if(!p) return ``;
 
-  let rows = '';
-  let counter = 1;
-  p.rows.forEach(r=>{
-    rows += `<tr>
-      <td>${counter++}</td>
+  let rowsHtml = p.rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
       <td class="domain-cell">${r.domain}</td>
       <td><b>${r.bloom_level||''}</b><br>${r.outcome||''}</td>
       <td>${r.time_minutes||''} د</td>
@@ -500,14 +472,14 @@ function renderStep3(){
       <td>${r.resources||''}</td>
       <td>${r.assessment_strategy||''}</td>
       <td>${r.assessment_tool||''}</td>
-    </tr>`;
-  });
+    </tr>
+  `).join('');
 
   return `
   <div class="card">
     <div class="top-nav">
       <h2>✅ خطة الدرس المكتملة</h2>
-      <button class="btn-ghost" onclick="goStep(2)">✏️ إعادة التوليد</button>
+      <button class="btn-ghost" onclick="goStep(3)">✏️ إدخال جديد</button>
     </div>
     <table class="meta-table">
       <tr><td class="label">الصف</td><td>${l.grade}</td><td class="label">الشعبة</td><td>${l.section||'-'}</td></tr>
@@ -521,7 +493,7 @@ function renderStep3(){
         <th>#</th><th>المجال</th><th>النتاج ومستوى بلوم</th><th>الزمن</th><th>المحتوى</th>
         <th>الاستراتيجية</th><th>المصادر</th><th>التقويم</th><th>الأداة</th>
       </tr>
-      ${rows}
+      ${rowsHtml}
     </table>
     </div>
 
@@ -560,6 +532,7 @@ function render(){
   if(state.step===1) html = renderStep1();
   else if(state.step===2) html = renderStep2();
   else if(state.step===3) html = renderStep3();
+  else if(state.step===4) html = renderStep4();
   el('app').innerHTML = html;
 }
 
